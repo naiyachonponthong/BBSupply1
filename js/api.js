@@ -9,6 +9,14 @@ BBS.token = null;
 BBS.user = null;
 BBS.cfg = {};
 
+/* ต้องสร้างตรงนี้ (ไฟล์แรกสุดที่โหลด) ไม่ใช่ใน app.js
+   เพราะไฟล์หน้าเว็บทุกไฟล์ (js/pages/*.js) โหลดก่อน app.js เสมอ
+   และแต่ละหน้าจะเขียน BBS.pages.<ชื่อหน้า> = {...} ทันทีตอนโหลด
+   ถ้า BBS.pages ยังไม่มี ทุกหน้าจะลงทะเบียนไม่ติดโดยไม่มีข้อความเตือนใด ๆ */
+BBS.pages = BBS.pages || {};
+BBS.pageKey = BBS.pageKey || 'dashboard';
+BBS.param = BBS.param || null;
+
 BBS.call = function (route, payload) {
   return fetch(CONFIG.API_URL, {
     method: 'POST',
