@@ -254,8 +254,8 @@ a{ text-decoration:none; }
 .pr-right{ text-align:right; }
 .pr-center{ text-align:center; }
 .pr-sign{ display:flex; justify-content:space-around; margin-top:34px; font-size:11pt; text-align:center; }
-.pr-sign div{ width:44%; }
-.pr-line{ border-bottom:1px dotted #000; height:26px; margin-bottom:4px; }
+.pr-sign > div{ width:44%; }
+.pr-line{ width:100%; border-bottom:1px dotted #000; height:26px; margin-bottom:4px; box-sizing:border-box; }
 .pr-foot{ font-size:9pt; text-align:right; margin-top:14px; color:#444; }
 
 /* สติกเกอร์ QR — A4 4 ดวง/แถว */
