@@ -390,7 +390,7 @@ BBS.pages.receipts = {
     var self = this;
     var lb = lineBox({ mode: 'rc', items: self.items, showPrice: BBS.user.seePrice });
     var supOpt = '';
-    self.sups.forEach(function (s) { supOpt += '<option value="' + s.id + '">' + BBS.esc(s.name) + '</option>'; });
+    self.sups.forEach(function (s) { supOpt += '<option value="' + BBS.esc(s.name) + '"></option>'; });
     var poOpt = '';
     self.pos.forEach(function (p) {
       poOpt += '<option value="' + p.id + '" data-sup="' + p.supplierId + '">' + BBS.esc(p.no + ' · ' + p.supplierName) + '</option>';
@@ -403,7 +403,9 @@ BBS.pages.receipts = {
       + '<select class="form-select" id="d_po"><option value="">— ไม่อ้างใบสั่งซื้อ —</option>' + poOpt + '</select>'
       + '<div class="form-text small">เลือกแล้วระบบจะดึงรายการที่ยังค้างรับมาให้</div></div>'
       + '<div class="col-md-5"><label class="form-label req">บริษัทผู้ขาย</label>'
-      + '<select class="form-select" id="d_sup"><option value="">— เลือกบริษัท —</option>' + supOpt + '</select></div>'
+      + '<input class="form-control" id="d_sup_name" list="supplierDL" autocomplete="off" placeholder="พิมพ์ชื่อบริษัท หรือเลือกจากรายการเดิม">'
+      + '<datalist id="supplierDL">' + supOpt + '</datalist>'
+      + '<div class="form-text small">สามารถพิมพ์เพิ่มบริษัทใหม่ได้</div></div>'
       + '</div>'
       + lb.html()
       + '<div class="row g-3 mt-1">'
@@ -420,12 +422,17 @@ BBS.pages.receipts = {
       onSave: function () {
         var lines;
         try { lines = lb.read(); } catch (e) { BBS.toast(e.message, 'warn'); return; }
-        var sup = document.getElementById('d_sup').value;
-        if (!sup) { BBS.toast('กรุณาเลือกบริษัทผู้ขาย', 'warn'); return; }
+        var supplierName = document.getElementById('d_sup_name').value.trim();
+        if (!supplierName) { BBS.toast('กรุณากรอกชื่อบริษัทผู้ขาย', 'warn'); return; }
+        var supplierKey = supplierName.toLowerCase();
+        var supplier = self.sups.filter(function (s) {
+          return String(s.name || '').trim().toLowerCase() === supplierKey;
+        })[0];
         BBS.apiMsg('receipt.create', {
           date: document.getElementById('d_date').value,
           poId: document.getElementById('d_po').value,
-          supplierId: sup,
+          supplierId: supplier ? supplier.id : '',
+          supplierName: supplierName,
           invoiceNo: document.getElementById('d_inv').value.trim(),
           note: document.getElementById('d_note').value.trim(),
           lines: lines
@@ -445,7 +452,10 @@ BBS.pages.receipts = {
       var opt = this.options[this.selectedIndex];
       var poId = this.value;
       if (!poId) return;
-      document.getElementById('d_sup').value = opt.getAttribute('data-sup') || '';
+      var poSupplier = self.sups.filter(function (s) {
+        return s.id === (opt.getAttribute('data-sup') || '');
+      })[0];
+      document.getElementById('d_sup_name').value = poSupplier ? poSupplier.name : '';
       BBS.api('po.openLines', { id: poId }).then(function (lines) {
         lb.fill((lines || []).map(function (l) {
           return { itemId: l.itemId, qty: l.outstanding, unitPrice: l.unitPrice };
@@ -491,7 +501,10 @@ BBS.pages.receipts = {
       document.getElementById('btnPrintRc').addEventListener('click', function () { printReceipt(doc); });
       document.getElementById('btnPrintLbl').addEventListener('click', function () {
         var labels = doc.lines.map(function (l) {
-          return { lotId: l.lotId, name: l.name, code: l.code, lotNo: l.lotNo, expDate: l.expDate };
+          return {
+            lotId: l.lotId, name: l.name, code: l.code, unit: l.unit,
+            qty: l.qty, receiptDate: doc.date, lotNo: l.lotNo, expDate: l.expDate
+          };
         });
         askLabelCount(labels);
       });
@@ -550,7 +563,8 @@ BBS.pages.lots = {
         var lot = self.rows.filter(function (r) { return r.id === b.getAttribute('data-id'); })[0];
         if (!lot) return;
         if (b.getAttribute('data-act') === 'qr') {
-          askLabelCount([{ lotId: lot.id, name: lot.name, code: lot.code, lotNo: lot.lotNo, expDate: lot.expDate }]);
+          askLabelCount([{ lotId: lot.id, name: lot.name, code: lot.code, unit: lot.unit,
+            qty: lot.qtyRemain, lotNo: lot.lotNo, expDate: lot.expDate }]);
         }
         if (b.getAttribute('data-act') === 'dispose') self.dispose(lot);
       });
@@ -683,7 +697,9 @@ function printLabels(labels, copies) {
       h += '<div class="lbl">'
         + (img ? '<img src="' + img + '">' : '')
         + '<div class="l-name">' + BBS.esc(l.name) + '</div>'
-        + '<div class="l-lot">' + BBS.esc(l.code) + ' · ล็อต ' + BBS.esc(l.lotNo || '-') + '</div>'
+        + (l.receiptDate ? '<div class="l-date">รับเข้า ' + BBS.dateTH(l.receiptDate) + '</div>' : '')
+        + (l.qty !== undefined && l.qty !== null ? '<div class="l-qty">จำนวน ' + BBS.num(l.qty, 2) + ' ' + BBS.esc(l.unit || '') + '</div>' : '')
+        + '<div class="l-lot">' + (l.code ? BBS.esc(l.code) + ' · ' : '') + 'LOT ' + BBS.esc(l.lotNo || '-') + '</div>'
         + '<div class="l-exp">EXP ' + (l.expDate ? BBS.dateTH(l.expDate) : '-') + '</div>'
         + '</div>';
     }
@@ -691,3 +707,4 @@ function printLabels(labels, copies) {
   h += '</div>';
   BBS.printNow(h);
 }
+

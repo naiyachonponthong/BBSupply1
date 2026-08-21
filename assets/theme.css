@@ -263,6 +263,8 @@ a{ text-decoration:none; }
 .lbl{ border:1px dashed #999; border-radius:2mm; padding:2.5mm; height:38mm; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
 .lbl img{ width:20mm; height:20mm; }
 .lbl .l-name{ font-size:8pt; font-weight:700; line-height:1.15; margin-top:1mm; overflow:hidden; max-height:9mm; }
+.lbl .l-date,.lbl .l-qty{ font-size:7.5pt; line-height:1.15; }
+.lbl .l-qty{ font-weight:700; }
 .lbl .l-lot{ font-size:7.5pt; }
 .lbl .l-exp{ font-size:9pt; font-weight:700; }
 
@@ -327,3 +329,4 @@ body.cam-open{ overflow:hidden; }
 #camReader video{ width:100% !important; height:auto !important; }
 .cam-hint{ color:rgba(255,255,255,.75); text-align:center; font-size:.88rem;
   padding:14px 16px calc(14px + env(safe-area-inset-bottom)); }
+
