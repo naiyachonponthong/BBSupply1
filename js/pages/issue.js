@@ -182,7 +182,8 @@ BBS.pages.issues = {
       self.ctx = r[1] || { items: [], lots: [], requesters: [] };
 
       host.innerHTML = BBS.head('เบิกจ่ายพัสดุ', 'ระบบตัดจ่ายจากล็อตที่หมดอายุก่อนโดยอัตโนมัติ',
-        '<button class="btn btn-brand" id="btnAdd"><i class="bi bi-box-arrow-up"></i> สร้างใบเบิก</button>')
+        (BBS.can('report') ? '<button class="btn btn-outline-brand" id="btnIssueReport"><i class="bi bi-printer"></i> พิมพ์รายงานการเบิกจ่าย</button>' : '')
+        + '<button class="btn btn-brand" id="btnAdd"><i class="bi bi-box-arrow-up"></i> สร้างใบเบิก</button>')
         + '<div class="card-bb">'
         + '<div class="toolbar"><div class="search"><i class="bi bi-search"></i>'
         + '<input class="form-control" id="q" placeholder="ค้นหาเลขที่ใบเบิก ผู้เบิก หน่วยงาน"></div>'
@@ -190,6 +191,8 @@ BBS.pages.issues = {
         + '<div class="card-bb-body p0" id="listBox"></div></div>';
 
       document.getElementById('btnAdd').addEventListener('click', function () { self.form(); });
+      var reportBtn = document.getElementById('btnIssueReport');
+      if (reportBtn) reportBtn.addEventListener('click', function () { self.printReport(); });
       document.getElementById('listBox').addEventListener('click', function (e) {
         var b = e.target.closest('[data-act]');
         if (!b) return;
@@ -241,6 +244,21 @@ BBS.pages.issues = {
       BBS.emptyBox(q ? 'ไม่พบใบเบิกที่ค้นหา' : 'ยังไม่มีการเบิกพัสดุ',
         q ? '' : 'กดสร้างใบเบิกเพื่อจ่ายพัสดุออกจากคลัง', 'bi-box-arrow-up'));
     document.getElementById('cnt').textContent = list.length + ' ใบ';
+  },
+
+  printReport: function () {
+    var btn = document.getElementById('btnIssueReport');
+    if (btn) btn.disabled = true;
+    BBS.api('report.issue', { from: '', to: '', dept: '', requesterId: '', categoryId: '' })
+      .then(function (d) {
+        if (!d || !d.rows || !d.rows.length) {
+          BBS.toast('ยังไม่มีข้อมูลการเบิกจ่ายให้พิมพ์', 'warn');
+          return;
+        }
+        printReport(REPORTS.issue(d), 'ทั้งหมด');
+      })
+      .catch(BBS.err)
+      .then(function () { if (btn) btn.disabled = false; });
   },
 
   form: function () {
