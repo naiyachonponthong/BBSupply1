@@ -45,7 +45,12 @@ BBS.pages.dashboard = {
             return '<strong>' + BBS.num(r.onHand, 2) + '</strong> <span class="t-mute">' + BBS.esc(r.unit) + '</span>';
           }
         },
-        { label: 'จุดสั่งซื้อ', w: '96px', cls: 't-right', fmt: function (r) { return BBS.num(r.minStock, 2); } }
+        { label: 'จุดสั่งซื้อ', w: '96px', cls: 't-right', fmt: function (r) { return BBS.num(r.minStock, 2); } },
+        {
+          label: 'ยอดคงเหลือจากจุดสั่งซื้อ', w: '150px', cls: 't-right', fmt: function (r) {
+            return '<strong>' + BBS.num(r.reorderRemain, 2) + '</strong> <span class="t-mute">' + BBS.esc(r.unit) + '</span>';
+          }
+        }
       ];
       h += '<div class="card-bb"><div class="card-bb-head"><i class="bi bi-exclamation-triangle"></i> พัสดุที่ควรสั่งซื้อเพิ่ม'
         + '<span class="sub"><a href="#/po">สร้างใบสั่งซื้อ</a></span></div>'
