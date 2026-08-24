@@ -17,11 +17,11 @@ BBS.pages = BBS.pages || {};
 BBS.pageKey = BBS.pageKey || 'dashboard';
 BBS.param = BBS.param || null;
 
-/* ลองใหม่ได้เฉพาะคำขออ่านข้อมูล/เข้าสู่ระบบ
+/* ลองใหม่ได้เฉพาะคำขออ่านข้อมูล/เข้าสู่ระบบ และ config.save ซึ่งเป็น idempotent
    ห้าม retry คำสั่งบันทึก เพราะอาจทำให้เกิดรายการซ้ำเมื่อเซิร์ฟเวอร์
    บันทึกสำเร็จแล้วแต่การตอบกลับขาดหายระหว่างทาง */
 BBS.isRetryableRoute = function (route) {
-  return /^(auth\.login|auth\.me|dash\.get|config\.get|.*\.list|.*\.get|report\.|issue\.ctx|count\.sheet|scan\.(resolve|search|history)|sys\.alertStatus)$/.test(String(route || ''));
+  return /^(auth\.login|auth\.me|dash\.get|config\.(get|save)|.*\.list|.*\.get|report\..+|issue\.ctx|count\.sheet|scan\.(resolve|search|history)|sys\.alertStatus)$/.test(String(route || ''));
 };
 
 BBS.wait = function (ms) {
