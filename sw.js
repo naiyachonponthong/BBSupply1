@@ -3,12 +3,15 @@
    ใช้แค่ให้ติดตั้งเป็นแอปบนหน้าจอมือถือและเปิดได้เร็วขึ้น
    ห้ามแคชคำขอที่คุยกับ Apps Script เด็ดขาด (ข้อมูลสต๊อกต้องสดเสมอ)
    ===================================================================== */
-var CACHE = 'bbsupply-v2';
+var CACHE = 'bbsupply-v3';
 var ASSETS = [
-  './', './index.html', './assets/theme.css',
-  './js/config.js', './js/api.js', './js/ui.js', './js/auth.js', './js/app.js',
-  './js/pages/dashboard.js', './js/pages/master.js', './js/pages/stock.js',
-  './js/pages/issue.js', './js/pages/scan.js', './js/pages/reports.js', './js/pages/settings.js'
+  './', './index.html', './assets/theme.css?v=20260824-1',
+  './js/config.js?v=20260824-1', './js/api.js?v=20260824-1',
+  './js/ui.js?v=20260824-1', './js/auth.js?v=20260824-1', './js/app.js?v=20260824-1',
+  './js/pages/dashboard.js?v=20260824-1', './js/pages/master.js?v=20260824-1',
+  './js/pages/stock.js?v=20260824-1', './js/pages/issue.js?v=20260824-1',
+  './js/pages/scan.js?v=20260824-1', './js/pages/reports.js?v=20260824-1',
+  './js/pages/settings.js?v=20260824-1'
 ];
 
 self.addEventListener('install', function (e) {
