@@ -47,4 +47,3 @@ self.addEventListener('fetch', function (e) {
       return res;
     }).catch(function () { return caches.match(req); }));
 });
-

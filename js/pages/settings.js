@@ -86,17 +86,22 @@ BBS.pages.settings = {
             return Math.floor(b64.length * 3 / 4);
           };
 
+          /* เป้าหมาย 150 KB — ก้อนยิ่งเล็ก โอกาสคำขอหล่นกลางทางยิ่งน้อย
+             ลดคุณภาพก่อน ถ้ายังไม่เข้าเป้าค่อยย่อขนาดทีละ 20% (คงสัดส่วนภาพ) */
+          var LIMIT = 150 * 1024;
           var mime = 'image/png';
           var dataUrl = render(mime);
-          if (byteSize(dataUrl) > 220 * 1024) {
+          if (byteSize(dataUrl) > LIMIT) {
             mime = 'image/jpeg';
             dataUrl = render(mime, 0.82);
           }
-          if (byteSize(dataUrl) > 300 * 1024) {
-            canvas.width = Math.max(1, Math.round(canvas.width * 0.75));
-            canvas.height = Math.max(1, Math.round(canvas.height * 0.75));
-            dataUrl = render('image/jpeg', 0.75);
+          var guard = 0;
+          while (byteSize(dataUrl) > LIMIT && guard < 6 && canvas.width > 80 && canvas.height > 80) {
+            guard++;
+            canvas.width = Math.round(canvas.width * 0.8);
+            canvas.height = Math.round(canvas.height * 0.8);
             mime = 'image/jpeg';
+            dataUrl = render(mime, 0.78);
           }
 
           var ext = mime === 'image/png' ? '.png' : '.jpg';
@@ -523,4 +528,3 @@ function toolRow(title, desc, action, btnText) {
     + '<div class="t-mute">' + BBS.esc(desc) + '</div></span>'
     + '<span><button class="btn-mini" data-tool="' + action + '">' + BBS.esc(btnText) + '</button></span></div>';
 }
-

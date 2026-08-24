@@ -27,9 +27,10 @@ BBS.lastError = null;
 
 /* ลองใหม่ได้เฉพาะคำขออ่านข้อมูล/เข้าสู่ระบบ และ config.save ซึ่งเป็น idempotent
    ห้าม retry คำสั่งบันทึก เพราะอาจทำให้เกิดรายการซ้ำเมื่อเซิร์ฟเวอร์
-   บันทึกสำเร็จแล้วแต่การตอบกลับขาดหายระหว่างทาง */
+   บันทึกสำเร็จแล้วแต่การตอบกลับขาดหายระหว่างทาง
+   config.logo/logoRemove เขียนทับค่าเดิมเสมอ ยิงซ้ำได้ไม่เกิดข้อมูลซ้ำ */
 BBS.isRetryableRoute = function (route) {
-  return /^(auth\.login|auth\.me|dash\.get|config\.(get|save)|.*\.list|.*\.get|report\..+|issue\.ctx|count\.sheet|scan\.(resolve|search|history)|sys\.alertStatus)$/.test(String(route || ''));
+  return /^(auth\.login|auth\.me|dash\.get|config\.(get|save|logo|logoRemove)|.*\.list|.*\.get|report\..+|issue\.ctx|count\.sheet|scan\.(resolve|search|history)|sys\.alertStatus)$/.test(String(route || ''));
 };
 
 BBS.wait = function (ms) {
@@ -40,7 +41,7 @@ BBS.wait = function (ms) {
    AbortError = ยิงออกไปแล้วแต่ครบเวลารอยังไม่มีคำตอบ
    สองกรณีนี้เท่านั้นที่ถือว่า "เชื่อมต่อไม่ได้" และลองใหม่ได้ */
 BBS.isNetworkError = function (e) {
-  return (e instanceof TypeError) || !!(e && e.name === 'AbortError');
+  return (e instanceof TypeError) || !!(e && (e.name === 'AbortError' || e.name === 'ApiDegradedError'));
 };
 
 /* ข้อความบอกสาเหตุแบบเจาะจง พร้อมชื่อคำสั่งที่ล้ม ทำให้ไล่ปัญหาได้จากหน้าจอจริง
@@ -49,7 +50,9 @@ BBS.isNetworkError = function (e) {
 BBS.netMessage = function (route, e) {
   var why = (e && e.name === 'AbortError')
     ? 'เซิร์ฟเวอร์ไม่ตอบภายใน ' + Math.round(BBS.TIMEOUT_MS / 1000) + ' วินาที'
-    : 'ส่งคำขอออกไปไม่ถึงเซิร์ฟเวอร์';
+    : (e && e.name === 'ApiDegradedError')
+      ? 'คำขอหล่นกลางทาง เซิร์ฟเวอร์ตอบกลับไม่ตรงคำสั่ง'
+      : 'ส่งคำขอออกไปไม่ถึงเซิร์ฟเวอร์';
   return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (' + route + ') — ' + why
     + ' ตรวจสัญญาณอินเทอร์เน็ต และตรวจว่าเครือข่ายไม่ได้บล็อก script.google.com หรือ script.googleusercontent.com';
 };
@@ -84,6 +87,15 @@ BBS.call = function (route, payload) {
         res = JSON.parse(txt);
       } catch (e) {
         throw new Error('ข้อมูลที่ได้กลับมาไม่ถูกต้อง — ตรวจว่า Deploy เป็นเว็บแอปแบบ "ทุกคน" แล้ว');
+      }
+      /* บางครั้ง Google ทำ POST หล่นกลางทางแล้วไปเสิร์ฟผลของ doGet แทน
+         สังเกตได้จากคำตอบเป็นข้อความต้อนรับของ API ทั้งที่เราส่ง route มา
+         กรณีนี้คำสั่งยังไม่ได้ทำงานจริง ต้องยิงใหม่ ห้ามนับว่าสำเร็จ */
+      if (res.status === 'success' && res.data && res.data.version && !res.data.token
+          && String(res.message || '').indexOf('พร้อมใช้งาน') > -1) {
+        var de = new Error('คำขอหล่นกลางทาง เซิร์ฟเวอร์ตอบกลับไม่ตรงคำสั่ง');
+        de.name = 'ApiDegradedError';
+        throw de;
       }
       if (res.status === 'error') {
         if (res.message === 'SESSION_EXPIRED') { BBS.auth.forceLogin(); }
