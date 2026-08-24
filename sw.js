@@ -3,7 +3,7 @@
    ใช้แค่ให้ติดตั้งเป็นแอปบนหน้าจอมือถือและเปิดได้เร็วขึ้น
    ห้ามแคชคำขอที่คุยกับ Apps Script เด็ดขาด (ข้อมูลสต๊อกต้องสดเสมอ)
    ===================================================================== */
-var CACHE = 'bbsupply-v1';
+var CACHE = 'bbsupply-v2';
 var ASSETS = [
   './', './index.html', './assets/theme.css',
   './js/config.js', './js/api.js', './js/ui.js', './js/auth.js', './js/app.js',
@@ -34,14 +34,14 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  e.respondWith(caches.match(req).then(function (hit) {
-    var net = fetch(req).then(function (res) {
+  /* network-first เพื่อไม่ให้ไฟล์ JS/CSS เวอร์ชันเก่าค้างหลัง Deploy
+     หากออฟไลน์จึงค่อยใช้ไฟล์จาก cache */
+  e.respondWith(fetch(req).then(function (res) {
       if (res && res.status === 200 && res.type === 'basic') {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copy); });
       }
       return res;
-    }).catch(function () { return hit; });
-    return hit || net;
-  }));
+    }).catch(function () { return caches.match(req); }));
 });
+
