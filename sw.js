@@ -3,15 +3,15 @@
    ใช้แค่ให้ติดตั้งเป็นแอปบนหน้าจอมือถือและเปิดได้เร็วขึ้น
    ห้ามแคชคำขอที่คุยกับ Apps Script เด็ดขาด (ข้อมูลสต๊อกต้องสดเสมอ)
    ===================================================================== */
-var CACHE = 'bbsupply-v4';
+var CACHE = 'bbsupply-v5';
 var ASSETS = [
-  './', './index.html', './assets/theme.css?v=20260824-2',
-  './js/config.js?v=20260824-2', './js/api.js?v=20260824-2',
-  './js/ui.js?v=20260824-2', './js/auth.js?v=20260824-2', './js/app.js?v=20260824-2',
-  './js/pages/dashboard.js?v=20260824-2', './js/pages/master.js?v=20260824-2',
-  './js/pages/stock.js?v=20260824-2', './js/pages/issue.js?v=20260824-2',
-  './js/pages/scan.js?v=20260824-2', './js/pages/reports.js?v=20260824-2',
-  './js/pages/settings.js?v=20260824-2'
+  './', './index.html', './assets/theme.css?v=20260824-3',
+  './js/config.js?v=20260824-3', './js/api.js?v=20260824-3',
+  './js/ui.js?v=20260824-3', './js/auth.js?v=20260824-3', './js/app.js?v=20260824-3',
+  './js/pages/dashboard.js?v=20260824-3', './js/pages/master.js?v=20260824-3',
+  './js/pages/stock.js?v=20260824-3', './js/pages/issue.js?v=20260824-3',
+  './js/pages/scan.js?v=20260824-3', './js/pages/reports.js?v=20260824-3',
+  './js/pages/settings.js?v=20260824-3'
 ];
 
 self.addEventListener('install', function (e) {
@@ -47,3 +47,4 @@ self.addEventListener('fetch', function (e) {
       return res;
     }).catch(function () { return caches.match(req); }));
 });
+
