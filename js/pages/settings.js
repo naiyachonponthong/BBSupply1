@@ -47,7 +47,9 @@ BBS.pages.settings = {
   },
 
   /* ลดขนาดโลโก้ก่อนแปลงเป็น Base64
-     ช่วยไม่ให้ request โตเกินไปเมื่อผ่าน proxy/firewall ของเครือข่ายองค์กร */
+     Config เก็บเป็น JSON ในเซลล์เดียว (Google Sheets จำกัด 50,000 ตัวอักษร/เซลล์)
+     จึงต้องให้รูปหลังบีบอัดไม่เกิน 24 KB เพื่อเหลือพื้นที่ให้ค่าตั้งค่าอื่น
+     และทำให้ทั้ง request/response สั้นพอที่จะไม่ถูก proxy ตัดกลางทาง */
   prepareLogo: function (file) {
     return new Promise(function (resolve, reject) {
       if (!file || String(file.type || '').indexOf('image/') !== 0) {
@@ -65,7 +67,7 @@ BBS.pages.settings = {
         var img = new Image();
         img.onerror = function () { reject(new Error('ไฟล์ภาพไม่ถูกต้องหรือเปิดไม่ได้')); };
         img.onload = function () {
-          var maxSide = 420;
+          var maxSide = 360;
           var scale = Math.min(1, maxSide / img.width, maxSide / img.height);
           var canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(img.width * scale));
@@ -86,22 +88,25 @@ BBS.pages.settings = {
             return Math.floor(b64.length * 3 / 4);
           };
 
-          /* เป้าหมาย 150 KB — ก้อนยิ่งเล็ก โอกาสคำขอหล่นกลางทางยิ่งน้อย
-             ลดคุณภาพก่อน ถ้ายังไม่เข้าเป้าค่อยย่อขนาดทีละ 20% (คงสัดส่วนภาพ) */
-          var LIMIT = 150 * 1024;
+          /* 24 KB -> Base64 ประมาณ 32 KB; รวม JSON แล้วยังต่ำกว่าเพดานเซลล์ 50,000 ตัวอักษร */
+          var LIMIT = 24 * 1024;
           var mime = 'image/png';
           var dataUrl = render(mime);
           if (byteSize(dataUrl) > LIMIT) {
             mime = 'image/jpeg';
-            dataUrl = render(mime, 0.82);
+            dataUrl = render(mime, 0.76);
           }
           var guard = 0;
-          while (byteSize(dataUrl) > LIMIT && guard < 6 && canvas.width > 80 && canvas.height > 80) {
+          while (byteSize(dataUrl) > LIMIT && guard < 10 && (canvas.width > 64 || canvas.height > 64)) {
             guard++;
-            canvas.width = Math.round(canvas.width * 0.8);
-            canvas.height = Math.round(canvas.height * 0.8);
+            canvas.width = Math.max(1, Math.round(canvas.width * 0.82));
+            canvas.height = Math.max(1, Math.round(canvas.height * 0.82));
             mime = 'image/jpeg';
-            dataUrl = render(mime, 0.78);
+            dataUrl = render(mime, Math.max(0.5, 0.74 - (guard * 0.025)));
+          }
+          if (byteSize(dataUrl) > LIMIT) {
+            reject(new Error('ไม่สามารถย่อโลโก้ให้อยู่ในขนาดที่ระบบรองรับได้ กรุณาใช้ภาพที่เรียบหรือเล็กลง'));
+            return;
           }
 
           var ext = mime === 'image/png' ? '.png' : '.jpg';
@@ -133,7 +138,7 @@ BBS.pages.settings = {
         + '<div class="btn-row justify-content-start mt-2">'
         + '<button class="btn-mini" id="btnLogo">อัปโหลด</button>'
         + '<button class="btn-mini danger" id="btnLogoDel">นำออก</button></div>'
-        + '<div class="form-text small">ไฟล์ภาพไม่เกิน 800 KB · ระบบจะย่อภาพก่อนอัปโหลด</div>'
+        + '<div class="form-text small">ไฟล์ภาพไม่เกิน 800 KB · ระบบจะย่อและบีบอัดให้อัตโนมัติ</div>'
         : '')
       + '</div>'
       + '<div class="col-md-9"><div class="row g-3">'
@@ -177,9 +182,12 @@ BBS.pages.settings = {
         prepared = data;
         return BBS.apiMsg('config.logo', data);
       }).then(function (r) {
+          /* ไม่ให้ API ส่ง Base64 ก้อนเดิมกลับมาอีกครั้ง เพราะเสี่ยงถูก CORS/proxy ตัดคำตอบ
+             ใช้ข้อมูลที่เบราว์เซอร์เตรียมไว้แสดงตัวอย่างได้ทันที */
+          var logoData = 'data:' + prepared.mimeType + ';base64,' + prepared.dataBase64;
           BBS.toast(r.message + (prepared ? ' (' + Math.ceil(prepared.size / 1024) + ' KB)' : ''), 'ok');
-          document.getElementById('logoBox').innerHTML = '<img src="' + r.data.logo_data + '">';
-          BBS.cfg.logo_data = r.data.logo_data;
+          document.getElementById('logoBox').innerHTML = '<img src="' + logoData + '">';
+          BBS.cfg.logo_data = logoData;
         }).catch(BBS.err).then(function () {
           btn.disabled = false;
           input.value = '';
