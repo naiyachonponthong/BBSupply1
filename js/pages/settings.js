@@ -390,6 +390,10 @@ BBS.pages.settings = {
       + toolRow('ตรวจสอบและสร้างชีตข้อมูล', 'ตรวจว่าชีตทั้งหมดครบถ้วน ถ้าขาดจะสร้างให้ใหม่โดยไม่กระทบข้อมูลเดิม', 'initSheets', 'สร้าง/ตรวจสอบ')
       + toolRow('คำนวณยอดคงเหลือใหม่ทั้งระบบ', 'สร้างยอดรับเข้า จ่ายออก คงเหลือ และยอดรายล็อตใหม่จากบัญชีเดินสะพัด ใช้เมื่อสงสัยว่ายอดไม่ตรง', 'rebuild', 'คำนวณใหม่')
       + toolRow('ล้างการเข้าใช้งานทั้งหมด', 'ผู้ใช้ทุกคนจะต้องเข้าสู่ระบบใหม่ ใช้เมื่อสงสัยว่ามีการเข้าถึงที่ไม่ควร', 'clearSessions', 'ล้าง session')
+      + '<div class="kv"><span><span class="v">ทดสอบการเชื่อมต่อเซิร์ฟเวอร์</span>'
+      + '<div class="t-mute">ยิงคำขอทดสอบไปที่ API_URL แล้วบอกผลว่าติดต่อได้หรือไม่ ใช้ตอนขึ้นข้อความ &quot;เชื่อมต่อเซิร์ฟเวอร์ไม่ได้&quot;</div>'
+      + '<div id="pingOut" class="mt-1"></div></span>'
+      + '<span><button class="btn-mini" id="btnPing">ทดสอบ</button></span></div>'
       + '</div></div>'
       + '<div class="card-bb"><div class="card-bb-head"><i class="bi bi-info-circle"></i> ข้อมูลระบบ</div>'
       + '<div class="card-bb-body">'
@@ -398,6 +402,18 @@ BBS.pages.settings = {
       + BBS.kv('บัญชีที่ใช้งานอยู่', BBS.user.username)
       + BBS.kv('ที่อยู่ API', CONFIG.API_URL)
       + '</div></div>';
+
+    var btnPing = document.getElementById('btnPing');
+    btnPing.addEventListener('click', function () {
+      var out = document.getElementById('pingOut');
+      btnPing.disabled = true;
+      out.innerHTML = '<span class="pill pill-mute">กำลังทดสอบ...</span>';
+      BBS.diag().then(function (d) {
+        btnPing.disabled = false;
+        out.innerHTML = '<span class="pill ' + (d.ok ? 'pill-ok' : 'pill-danger') + '">'
+          + BBS.esc(d.detail) + '</span>';
+      });
+    });
 
     box.addEventListener('click', function (e) {
       var b = e.target.closest('[data-tool]');
