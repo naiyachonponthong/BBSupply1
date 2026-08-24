@@ -17,33 +17,55 @@ BBS.pages = BBS.pages || {};
 BBS.pageKey = BBS.pageKey || 'dashboard';
 BBS.param = BBS.param || null;
 
+/* ลองใหม่ได้เฉพาะคำขออ่านข้อมูล/เข้าสู่ระบบ
+   ห้าม retry คำสั่งบันทึก เพราะอาจทำให้เกิดรายการซ้ำเมื่อเซิร์ฟเวอร์
+   บันทึกสำเร็จแล้วแต่การตอบกลับขาดหายระหว่างทาง */
+BBS.isRetryableRoute = function (route) {
+  return /^(auth\.login|auth\.me|dash\.get|config\.get|.*\.list|.*\.get|report\.|issue\.ctx|count\.sheet|scan\.(resolve|search|history)|sys\.alertStatus)$/.test(String(route || ''));
+};
+
+BBS.wait = function (ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+};
+
 BBS.call = function (route, payload) {
-  return fetch(CONFIG.API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    redirect: 'follow',
-    body: JSON.stringify({ route: route, token: BBS.token || '', payload: payload || {} })
-  }).then(function (r) {
-    if (!r.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (' + r.status + ')');
-    return r.text();
-  }).then(function (txt) {
-    var res;
-    try {
-      res = JSON.parse(txt);
-    } catch (e) {
-      throw new Error('ข้อมูลที่ได้กลับมาไม่ถูกต้อง — ตรวจว่า Deploy เป็นเว็บแอปแบบ "ทุกคน" แล้ว');
-    }
-    if (res.status === 'error') {
-      if (res.message === 'SESSION_EXPIRED') { BBS.auth.forceLogin(); }
-      throw new Error(res.message || 'เกิดข้อผิดพลาด');
-    }
-    return res;
-  }).catch(function (e) {
-    if (e instanceof TypeError) {
-      throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ตและ API_URL ใน config.js');
-    }
-    throw e;
-  });
+  var attempt = 0;
+  var maxAttempts = BBS.isRetryableRoute(route) ? 3 : 1;
+
+  var request = function () {
+    attempt++;
+    return fetch(CONFIG.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+      body: JSON.stringify({ route: route, token: BBS.token || '', payload: payload || {} })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (' + r.status + ')');
+      return r.text();
+    }).then(function (txt) {
+      var res;
+      try {
+        res = JSON.parse(txt);
+      } catch (e) {
+        throw new Error('ข้อมูลที่ได้กลับมาไม่ถูกต้อง — ตรวจว่า Deploy เป็นเว็บแอปแบบ "ทุกคน" แล้ว');
+      }
+      if (res.status === 'error') {
+        if (res.message === 'SESSION_EXPIRED') { BBS.auth.forceLogin(); }
+        throw new Error(res.message || 'เกิดข้อผิดพลาด');
+      }
+      return res;
+    }).catch(function (e) {
+      if (e instanceof TypeError && attempt < maxAttempts) {
+        return BBS.wait(attempt * 1200).then(request);
+      }
+      if (e instanceof TypeError) {
+        throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบสัญญาณอินเทอร์เน็ตและ API_URL ใน config.js');
+      }
+      throw e;
+    });
+  };
+
+  return request();
 };
 
 /* คืนเฉพาะ data */
@@ -55,3 +77,4 @@ BBS.api = function (route, payload) {
 
 /* คืนทั้งก้อน (ใช้ตอนอยากได้ message มาแสดง) */
 BBS.apiMsg = function (route, payload) { return BBS.call(route, payload); };
+
